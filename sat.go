@@ -17,6 +17,7 @@ const N int = 250000
 const T0 float32 = 1.0
 const TN float32 = 0.9999
 const numberOfConditions int = 91
+const sizeOfgene int = 20
 
 //generate random number in a range (x,y)
 func random(min, max int) int {
@@ -74,7 +75,7 @@ func abs(x int) int{
 }
 
 //Measure the energy of the candidate
-/*func energy(candidate []int , coditionList [numberOfConditions][3]int) int{
+func energy(candidate []int , coditionList [numberOfConditions][3]int) int{
 	var total int = 0
 	for _, element := range coditionList{
 		for _, subelement := range element{
@@ -89,9 +90,10 @@ func abs(x int) int{
 		}
 	}
 	return total
-}*/
+}
 
 func main() {
+	list := RandomList(sizeOfgene)
 	lcnf := read("uf20_01.cnf")
-	fmt.Printf("%v",lcnf)
+	fmt.Printf("%v",energy(list,lcnf))
 }
