@@ -36,7 +36,7 @@ func RandomList(x int) []int {
 }
 
 //read file with the coditions
-func read(filename string, size int) [numberOfConditions][3]int {
+func read(filename string) [numberOfConditions][3]int {
 
 	file, err := os.Open(filename)
 	if err != nil {
@@ -66,25 +66,23 @@ func read(filename string, size int) [numberOfConditions][3]int {
 	return l
 }
 
-//func energy(initialList []int)
-
-func main() {
-	// To run a code do: go run yourfile.go
-	// To compile and be able to run from any machine do: go install and execute the generated binary over the bin folder
-	list := RandomList(10)
-	fmt.Printf("%v", list)
+func abs(x int) int{
+	if x < 0{
+		return -x
+	}
+	return x
 }
-/*
-func energy(list []int , coditionList [][]int) int{
+
+//Measure the energy of the candidate
+/*func energy(candidate []int , coditionList [numberOfConditions][3]int) int{
 	var total int = 0
-	for index, element := range coditionList{
-		var cont int = 0
-		for index2, subelement := range element{
-			if(subelement<0 && !(list[math.Abs(subelement) - 1])){
+	for _, element := range coditionList{
+		for _, subelement := range element{
+			if(subelement<0 && !(candidate[abs(subelement) - 1] == 1)){
 				total++
 				break
 			}
-			if(subelement>0 && list[math.Abs(subelement) - 1]){
+			if(subelement>0 && candidate[abs(subelement) - 1] == 1){
 				total++
 				break
 			}
@@ -92,3 +90,8 @@ func energy(list []int , coditionList [][]int) int{
 	}
 	return total
 }*/
+
+func main() {
+	lcnf := read("uf20_01.cnf")
+	fmt.Printf("%v",lcnf)
+}
