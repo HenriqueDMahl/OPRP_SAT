@@ -16,6 +16,7 @@ const TAM int = 250
 const N int = 250000
 const T0 float32 = 1.0
 const TN float32 = 0.9999
+const numberOfConditions int = 91
 
 //generate random number in a range (x,y)
 func random(min, max int) int {
@@ -35,7 +36,7 @@ func RandomList(x int) []int {
 }
 
 //read file with the coditions
-func read(filename string) [][]int {
+func read(filename string, size int) [numberOfConditions][3]int {
 
 	file, err := os.Open(filename)
 	if err != nil {
@@ -45,21 +46,20 @@ func read(filename string) [][]int {
 
 	scanner := bufio.NewScanner(file)
 	var validString = regexp.MustCompile(`(\-?[0-9]+)\s+(\-?[0-9]+)\s+(\-?[0-9]+) 0`)
-	var l [][]int
-	var s2 []int
+	var l [numberOfConditions][3]int
+	var i int = 0
 	for scanner.Scan() {
 		if validString.MatchString(scanner.Text()) {
 			s := strings.Split(validString.FindString(scanner.Text()), " ")
 			s = s[:3]
-			for _, i := range s {
-				j, err := strconv.Atoi(i)
+			for idx, k := range s {
+				j, err := strconv.Atoi(k)
 				if err != nil {
 					panic(err)
 				}
-				s2 = append(s2, j)
+				l[i][idx] = j
 			}
-			l = append(l, s2)
-			s2 = s2[:0]
+			i++
 		}
 	}
 
@@ -74,3 +74,21 @@ func main() {
 	list := RandomList(10)
 	fmt.Printf("%v", list)
 }
+/*
+func energy(list []int , coditionList [][]int) int{
+	var total int = 0
+	for index, element := range coditionList{
+		var cont int = 0
+		for index2, subelement := range element{
+			if(subelement<0 && !(list[math.Abs(subelement) - 1])){
+				total++
+				break
+			}
+			if(subelement>0 && list[math.Abs(subelement) - 1]){
+				total++
+				break
+			}
+		}
+	}
+	return total
+}*/
