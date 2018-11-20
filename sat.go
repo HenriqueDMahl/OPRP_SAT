@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"math"
 	"os"
 	"regexp"
 	"strconv"
@@ -14,8 +15,8 @@ import (
 
 const TAM int = 250
 const N int = 250000
-const T0 float32 = 1.0
-const TN float32 = 0.9999
+const T0 float64 = 1.0
+const TN float64 = 0.9999
 const numberOfConditions int = 91
 const sizeOfgene int = 20
 
@@ -67,6 +68,7 @@ func read(filename string) [numberOfConditions][3]int {
 	return l
 }
 
+//absolute
 func abs(x int) int{
 	if x < 0{
 		return -x
@@ -92,8 +94,28 @@ func energy(candidate []int , coditionList [numberOfConditions][3]int) int{
 	return total
 }
 
+//temperature for annealing
+func temperature(i int) float64{
+	A := math.Pow(float64(N),(-2.0)) * math.Log(T0/TN)
+	return T0 * math.Exp((-A*math.Pow(float64(i), 2.0)))
+}
+
+//disturbs the candidate to generate a new candidate
+func disturbs(candidate []int) []int{
+	new_candidate := make([]int, len(candidate))
+	r := rand.Intn(len(candidate))
+	copy(new_candidate,candidate)
+	if new_candidate[r] == 1{
+		new_candidate[r] = 0
+	}else{
+		new_candidate[r] = 1
+	}
+	return new_candidate
+}
+
 func main() {
 	list := RandomList(sizeOfgene)
-	lcnf := read("uf20_01.cnf")
-	fmt.Printf("%v",energy(list,lcnf))
+	fmt.Println("Before List = %v",list)
+	fmt.Println("%v",disturbs(list))
+	fmt.Println("After List = %v",list)
 }
