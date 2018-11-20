@@ -113,9 +113,31 @@ func disturbs(candidate []int) []int{
 	return new_candidate
 }
 
+//simulated annealing
+func annealing(candidate []int , coditionList [numberOfConditions][3]int) int{
+	t := T0
+	i := 1
+	for {
+		
+		new_candidate := disturbs(candidate)
+		deltaE := energy(candidate,coditionList) - energy(new_candidate,coditionList)
+		
+		if deltaE <= 0 {
+			candidate = new_candidate
+		}else if (float64(random(0 , 100)/100)) + (float64(random(0 , 100))/100) < math.Exp((float64(-deltaE)/t)){
+			candidate = new_candidate
+		}
+		
+		t = temperature(i)
+		i++
+		if(t < TN || i > N){
+			return energy(candidate,coditionList)
+		}
+	}
+}
+
 func main() {
-	list := RandomList(sizeOfgene)
-	fmt.Println("Before List = %v",list)
-	fmt.Println("%v",disturbs(list))
-	fmt.Println("After List = %v",list)
+	candidate := RandomList(sizeOfgene)
+	listCnf := read("uf20_01.cnf")
+	fmt.Println("Annealing = ",annealing(candidate,listCnf))
 }
