@@ -136,8 +136,34 @@ func annealing(candidate []int , coditionList [numberOfConditions][3]int) int{
 	}
 }
 
+//standard deviation and average
+func sd_a(list []int) [2]float64{
+	var average float64 = 0.0
+	var sd float64 = 0.0
+	var result [2]float64
+	
+	for _, item := range list{
+		average += float64(item)
+	}
+	
+	average = average / float64(len(list))
+	
+	for _, item := range list{
+		sd += math.Pow((float64(item) - average), 2.0)
+	}
+	sd = math.Sqrt(sd / float64(len(list)))
+	
+	result[0] = average
+	result[1] = sd
+	
+	return result
+}
+
 func main() {
 	candidate := RandomList(sizeOfgene)
 	listCnf := read("uf20_01.cnf")
-	fmt.Println("Annealing = ",annealing(candidate,listCnf))
+	var list []int
+	list = append(list,annealing(candidate,listCnf))
+	fmt.Println("Annealing = ",list)
+	fmt.Println("Result = ",sd_a(list))
 }
