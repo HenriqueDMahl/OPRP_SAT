@@ -4,21 +4,50 @@ import (
 	"bufio"
 	"fmt"
 	"log"
-	"math/rand"
 	"math"
+	"math/rand"
 	"os"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
+func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+}
+
+var we sync.WaitGroup
+var mutex sync.Mutex
+
 const TAM int = 250
 const N int = 250000
+
+//make chunk variable
+var chunk int = 0
+
 const T0 float64 = 1.0
 const TN float64 = 0.9999
 const numberOfConditions int = 91
 const sizeOfgene int = 20
+
+//Global list of Conditions
+var coditionList [numberOfConditions][3]int
+
+//Global temperature
+var t float64 = T0
+
+//Global list
+var list []int
+
+/*
+File	 | N Conditions | Gene size |
+uf20_01  |      91      |    20     |
+uf100_01 |      XYZ     |    100    |
+uf250_01 |      1065    |    250    |
+*/
 
 //generate random number in a range (x,y)
 func random(min, max int) int {
@@ -38,8 +67,7 @@ func RandomList(x int) []int {
 }
 
 //read file with the coditions
-func read(filename string) [numberOfConditions][3]int {
-
+func read(filename string) {
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
@@ -65,27 +93,27 @@ func read(filename string) [numberOfConditions][3]int {
 		}
 	}
 
-	return l
+	coditionList = l
 }
 
-//absolute
-func abs(x int) int{
-	if x < 0{
+//absolute value of int
+func abs(x int) int {
+	if x < 0 {
 		return -x
 	}
 	return x
 }
 
 //Measure the energy of the candidate
-func energy(candidate []int , coditionList [numberOfConditions][3]int) int{
+func energy(candidate []int) int {
 	var total int = 0
-	for _, element := range coditionList{
-		for _, subelement := range element{
-			if(subelement<0 && !(candidate[abs(subelement) - 1] == 1)){
+	for _, element := range coditionList {
+		for _, subelement := range element {
+			if subelement < 0 && !(candidate[abs(subelement)-1] == 1) {
 				total++
 				break
 			}
-			if(subelement>0 && candidate[abs(subelement) - 1] == 1){
+			if subelement > 0 && candidate[abs(subelement)-1] == 1 {
 				total++
 				break
 			}
@@ -95,75 +123,101 @@ func energy(candidate []int , coditionList [numberOfConditions][3]int) int{
 }
 
 //temperature for annealing
-func temperature(i int) float64{
-	A := math.Pow(float64(N),(-2.0)) * math.Log(T0/TN)
-	return T0 * math.Exp((-A*math.Pow(float64(i), 2.0)))
+func temperature(i int) float64 {
+	A := math.Pow(float64(N), (-2.0)) * math.Log(T0/TN)
+	return T0 * math.Exp((-A * math.Pow(float64(i), 2.0)))
 }
 
 //disturbs the candidate to generate a new candidate
-func disturbs(candidate []int) []int{
+func disturbs(candidate []int) []int {
 	new_candidate := make([]int, len(candidate))
 	r := rand.Intn(len(candidate))
-	copy(new_candidate,candidate)
-	if new_candidate[r] == 1{
+	copy(new_candidate, candidate)
+	if new_candidate[r] == 1 {
 		new_candidate[r] = 0
-	}else{
+	} else {
 		new_candidate[r] = 1
 	}
 	return new_candidate
 }
 
 //simulated annealing
-func annealing(candidate []int , coditionList [numberOfConditions][3]int) int{
+func annealing(candidate []int, id int) {
 	t := T0
-	i := 1
+	flag := 0
+	i := (id * chunk) + 1
+	limit := (id * chunk) + chunk
 	for {
-		
 		new_candidate := disturbs(candidate)
-		deltaE := energy(candidate,coditionList) - energy(new_candidate,coditionList)
-		
+		deltaE := energy(candidate) - energy(new_candidate)
+
 		if deltaE <= 0 {
 			candidate = new_candidate
-		}else if (float64(random(0 , 100)/100)) + (float64(random(0 , 100))/100) < math.Exp((float64(-deltaE)/t)){
+		} else if (float64(random(0, 100)/100))+(float64(random(0, 100))/100) < math.Exp((float64(-deltaE) / t)) {
 			candidate = new_candidate
 		}
-		
-		t = temperature(i)
+
 		i++
-		if(t < TN || i > N){
-			return energy(candidate,coditionList)
+		mutex.Lock()
+		t = temperature(i)
+		if t < TN || i >= limit {
+			list = append(list, energy(candidate))
+			flag = 1
+		}
+		mutex.Unlock()
+		if flag == 1 {
+			break
 		}
 	}
+	we.Done()
 }
 
 //standard deviation and average
-func sd_a(list []int) [2]float64{
+func sd_a(list []int) [2]float64 {
 	var average float64 = 0.0
 	var sd float64 = 0.0
 	var result [2]float64
-	
-	for _, item := range list{
+
+	for _, item := range list {
 		average += float64(item)
 	}
-	
+
 	average = average / float64(len(list))
-	
-	for _, item := range list{
+
+	for _, item := range list {
 		sd += math.Pow((float64(item) - average), 2.0)
 	}
 	sd = math.Sqrt(sd / float64(len(list)))
-	
+
 	result[0] = average
 	result[1] = sd
-	
+
 	return result
+}
+
+//pick best
+func pick_best() int {
+	var best int = 0
+	for _, i := range list {
+		if i > best {
+			best = i
+		}
+	}
+	return best
 }
 
 func main() {
 	candidate := RandomList(sizeOfgene)
-	listCnf := read("uf20_01.cnf")
-	var list []int
-	list = append(list,annealing(candidate,listCnf))
-	fmt.Println("Annealing = ",list)
-	fmt.Println("Result = ",sd_a(list))
+	read("uf20_01.cnf")
+	// Get the maximum of CPU cores available
+	maxCores := runtime.NumCPU()
+	chunk = 250000 / maxCores
+	we.Add(maxCores)
+	for core := 0; core <= maxCores; core++ {
+		go annealing(candidate, core)
+	}
+	we.Wait()
+	fmt.Println("Annealing = ", list)
+	fmt.Println("Result = ", sd_a(list))
+	fmt.Println("Best = ", pick_best())
 }
