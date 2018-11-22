@@ -30,8 +30,15 @@ var chunk int = 0
 
 const T0 float64 = 1.0
 const TN float64 = 0.9999
-const numberOfConditions int = 91
-const sizeOfgene int = 20
+const numberOfConditions int = 34080
+const sizeOfgene int = 250
+
+/*
+File	 | N Conditions | Gene size |
+uf20_01  |      91      |    20     |
+uf100_01 |      XYZ     |    100    |
+uf250_01 |      1065    |    250    |
+*/
 
 //Global list of Conditions
 var coditionList [numberOfConditions][3]int
@@ -42,12 +49,7 @@ var t float64 = T0
 //Global list
 var list []int
 
-/*
-File	 | N Conditions | Gene size |
-uf20_01  |      91      |    20     |
-uf100_01 |      XYZ     |    100    |
-uf250_01 |      1065    |    250    |
-*/
+
 
 //generate random number in a range (x,y)
 func random(min, max int) int {
@@ -153,18 +155,19 @@ func annealing(candidate []int, id int) {
 
 		if deltaE <= 0 {
 			candidate = new_candidate
-		} else if (float64(random(0, 100)/100))+(float64(random(0, 100))/100) < math.Exp((float64(-deltaE) / t)) {
+		} else if (float64(random(0, 100)))+(float64(random(0, 100))/100) < math.Exp((float64(-deltaE) / t)) {
 			candidate = new_candidate
 		}
 
 		i++
 		mutex.Lock()
 		t = temperature(i)
+		mutex.Unlock()
 		if t < TN || i >= limit {
+			//fmt.Printf("Temperatura = %v de %v Chunk = %v >= %v\n", t,id,limit,i)
 			list = append(list, energy(candidate))
 			flag = 1
 		}
-		mutex.Unlock()
 		if flag == 1 {
 			break
 		}
@@ -208,12 +211,12 @@ func pick_best() int {
 
 func main() {
 	candidate := RandomList(sizeOfgene)
-	read("uf20_01.cnf")
+	read("uf250_0_34080.cnf")
 	// Get the maximum of CPU cores available
 	maxCores := runtime.NumCPU()
-	chunk = 250000 / maxCores
+	chunk = N / maxCores
 	we.Add(maxCores)
-	for core := 0; core <= maxCores; core++ {
+	for core := 0; core < maxCores; core++ {
 		go annealing(candidate, core)
 	}
 	we.Wait()

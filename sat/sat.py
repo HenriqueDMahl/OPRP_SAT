@@ -1,5 +1,5 @@
 from random import *
-from thread import start_new_thread
+from threading import Thread, Lock
 #import matplotlib.pyplot as plt
 import time
 import math
@@ -9,11 +9,13 @@ TAM = 250
 N = 250000
 T0 = 1
 TN = 0.9999
+t = T0
 listaRSItens = []
 listaSAItens = []
 listaRandomsearch = []
 listaSA = []
 num_thread = 10
+mutex = Lock()
 
 def gerarRandomList(x):
     lista = []
@@ -79,13 +81,14 @@ def randomsearch(s0,listaCNF):
     #listaRSItens.append(lista)
     return melhorEnergia
 
-def simuAnne(s0,listaCNF):
+def simuAnne(s0,listaCNF,id,chunk):
     #global listaSAItens
     candidato = s0
-    t = T0
+
     cont = 1
     e = energia(s0,listaCNF)
-    lista = [e]
+    limit = (id*chunk)+chunk
+    #lista = [e]
     while(True):
         proximo = vizinho(candidato)
         deltaE = energia(candidato,listaCNF) - energia(proximo,listaCNF)
@@ -95,12 +98,15 @@ def simuAnne(s0,listaCNF):
         elif random() + float(randrange(0, 99)) < math.e ** (-deltaE/float(t)):
             candidato = proximo
 
+        mutex.acquire()
         t = temperatura(cont)
+        mutex.release()
         cont += 1
         #lista.append((energia(candidato,listaCNF)))
-        if(t < TN or cont > N):
+        if(t < TN or cont >= limit):
             #listaSAItens.append(lista)
-            return energia(candidato,listaCNF)
+            asfaf = energia(candidato,listaCNF)
+            return
 
 def media_dp(lista):
     media = 0.0
@@ -116,6 +122,14 @@ def media_dp(lista):
     return (media,dp)
 
 listaCNF = ler()
+
+
+
+chunk = N/8
+inicial = gerarRandomList(TAM)
+for i in range(8):
+    x = Thread(target = simuAnne, args = (inicial,listaCNF,i,chunk))
+    x.start()
 
 """
 for i in range(9):
